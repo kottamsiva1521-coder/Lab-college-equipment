@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search Equipment | Lab Equipment Management</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">🔬 Lab Equipment Management</div>
+    <nav><a href="index.html">Home</a><a href="list.html">All Equipment</a><a class="active" href="listOne.html">Search</a><a href="insert.html">Add Equipment</a><a href="update.html">Update</a><a href="delete.html">Delete</a><a href="users.html">Users</a><a href="request.html">Request</a><a href="issues.html">Issue / Return</a><a href="reports.html">Reports</a></nav>
+  </header>
+  <main class="page">
+    <div class="page-heading"><span class="eyebrow">QUICK LOOKUP</span><h1>Search for equipment</h1><p>Enter an equipment ID to view its details.</p></div>
+    <section class="panel form-panel">
+      <form id="searchForm"><label>Equipment ID<input id="equipment_id" type="number" min="1" placeholder="Enter equipment ID" required></label>
+      <button class="btn primary" type="submit">Search equipment</button></form>
+      <p id="message" class="message"></p>
+      <div class="table-wrap"><table><thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Total</th><th>Available</th><th>Status</th></tr></thead><tbody id="rows"><tr><td colspan="6">Search for equipment to see its details.</td></tr></tbody></table></div>
+    </section>
+  </main>
+  <footer>Lab Equipment Management · Lab Equipment Management System</footer>
+<script>
+document.getElementById("searchForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const id = document.getElementById("equipment_id").value, rows = document.getElementById("rows"), msg = document.getElementById("message");
+  try {
+    const r = await fetch("/equipment/" + encodeURIComponent(id));
+    if (!r.ok) throw new Error(r.status === 404 ? "Equipment not found." : "Request failed: " + r.status);
+    const data = await r.json(), item = Array.isArray(data) ? data[0] : data;
+    if (!item) throw new Error("Equipment not found.");
+    rows.innerHTML = ""; const tr = document.createElement("tr");
+    ["equipment_id", "name", "category", "quantity", "available_quantity"].forEach(k => {
+      const td = document.createElement("td"); td.textContent = item[k] ?? ""; tr.appendChild(td);
+    });
+    const td = document.createElement("td"), b = document.createElement("span");
+    b.className = "badge " + String(item.status).toLowerCase(); b.textContent = item.status;
+    td.appendChild(b); tr.appendChild(td); rows.appendChild(tr);
+    msg.textContent = "Equipment found."; msg.className = "message success";
+  } catch (err) {
+    rows.innerHTML = '<tr><td colspan="6">No equipment details to display.</td></tr>';
+    msg.textContent = err.message + " If the API is unavailable, check your backend."; msg.className = "message error";
+  }
+});
+</script>
+</body>
+</html>

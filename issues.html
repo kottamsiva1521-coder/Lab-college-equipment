@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Issue / Return | Lab Equipment Management</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">🔬 Lab Equipment Management</div>
+    <nav><a href="index.html">Home</a><a href="list.html">All Equipment</a><a href="listOne.html">Search</a><a href="insert.html">Add Equipment</a><a href="update.html">Update</a><a href="delete.html">Delete</a><a href="users.html">Users</a><a href="request.html">Request</a><a class="active" href="issues.html">Issue / Return</a><a href="reports.html">Reports</a></nav>
+  </header>
+  <main class="page">
+    <div class="page-heading"><span class="eyebrow">TRANSACTIONS</span><h1>Issue &amp; return</h1><p>Approve requests to issue equipment, and record returns. Damaged units are not added back to stock.</p></div>
+    <section class="panel">
+      <div class="toolbar"><h2>Issue records</h2>
+        <div class="actions"><select id="statusFilter" class="filter-select" onchange="loadIssues()"><option value="">All statuses</option><option>Requested</option><option>Issued</option><option>Returned</option><option>Damaged</option><option>Rejected</option></select>
+        <button class="btn primary" onclick="loadIssues()">↻ Refresh</button></div></div>
+      <div class="table-wrap"><table><thead><tr><th>#</th><th>User</th><th>Equipment</th><th>Qty</th><th>Issued</th><th>Returned</th><th>Status</th><th>Action</th></tr></thead><tbody id="rows"><tr><td colspan="8">Loading…</td></tr></tbody></table></div>
+      <p id="message" class="message"></p>
+    </section>
+  </main>
+  <footer>Lab Equipment Management · Lab Equipment Management System</footer>
+<script>
+async function act(id, action, body) {
+  const msg = document.getElementById("message");
+  try {
+    const r = await fetch("/issues/" + id + "/" + action, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
+    const t = await r.text();
+    if (!r.ok) throw new Error(t);
+    msg.textContent = t; msg.className = "message success";
+  } catch (err) { msg.textContent = err.message; msg.className = "message error"; }
+  loadIssues(true);
+}
+function actionButton(label, cls, handler) {
+  const b = document.createElement("button"); b.className = "row-btn " + cls; b.textContent = label; b.onclick = handler; return b;
+}
+async function loadIssues(keepMessage) {
+  const rows = document.getElementById("rows"), msg = document.getElementById("message");
+  const status = document.getElementById("statusFilter").value;
+  if (keepMessage !== true) msg.textContent = "";
+  try {
+    const r = await fetch("/issues" + (status ? "?status=" + encodeURIComponent(status) : ""));
+    if (!r.ok) throw new Error("Request failed: " + r.status);
+    const list = await r.json(); rows.innerHTML = "";
+    if (!list.length) { rows.innerHTML = '<tr><td colspan="8">No records found.</td></tr>'; return; }
+    list.forEach(i => {
+      const tr = document.createElement("tr");
+      [i.issue_id, i.user_name + " (" + i.user_role + ")", i.equipment_name, i.quantity, i.issue_date || "—", i.return_date || "—"].forEach(v => {
+        const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
+      });
+      const st = document.createElement("td"), badge = document.createElement("span");
+      badge.className = "badge " + i.status.toLowerCase(); badge.textContent = i.status; st.appendChild(badge); tr.appendChild(st);
+      const ac = document.createElement("td");
+      if (i.status === "Requested") {
+        ac.appendChild(actionButton("Issue", "", () => act(i.issue_id, "approve")));
+        ac.appendChild(actionButton("Reject", "red", () => act(i.issue_id, "reject")));
+      } else if (i.status === "Issued") {
+        ac.appendChild(actionButton("Return", "", () => {
+          const d = prompt("How many of the " + i.quantity + " unit(s) came back DAMAGED? (0 if none)", "0");
+          if (d === null) return;
+          act(i.issue_id, "return", { damaged_qty: Number(d) });
+        }));
+      }
+      tr.appendChild(ac); rows.appendChild(tr);
+    });
+  } catch (e) {
+    rows.innerHTML = '<tr><td colspan="8">Could not load records. Check that the backend API is running.</td></tr>';
+    msg.textContent = e.message; msg.className = "message error";
+  }
+}
+loadIssues();
+</script>
+</body>
+</html>

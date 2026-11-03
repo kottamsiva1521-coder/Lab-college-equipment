@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports | Lab Equipment Management</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">🔬 Lab Equipment Management</div>
+    <nav><a href="index.html">Home</a><a href="list.html">All Equipment</a><a href="listOne.html">Search</a><a href="insert.html">Add Equipment</a><a href="update.html">Update</a><a href="delete.html">Delete</a><a href="users.html">Users</a><a href="request.html">Request</a><a href="issues.html">Issue / Return</a><a class="active" href="reports.html">Reports</a></nav>
+  </header>
+  <main class="page">
+    <div class="page-heading"><span class="eyebrow">ADMIN</span><h1>Damaged &amp; unavailable equipment</h1><p>Track equipment that is damaged, unavailable, or has units lost to damage.</p></div>
+    <section class="panel">
+      <div class="toolbar"><h2>Problem equipment</h2><button class="btn primary" onclick="loadReports()">↻ Refresh</button></div>
+      <div class="table-wrap"><table><thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Status</th><th>Total</th><th>In stock</th><th>Unusable units</th></tr></thead><tbody id="problemRows"><tr><td colspan="7">Loading…</td></tr></tbody></table></div>
+      <p class="hint">Unusable units = total − in stock − currently issued. Repair or write them off on the Update page.</p>
+    </section>
+    <section class="panel section-gap">
+      <div class="toolbar"><h2>Returns with damage</h2></div>
+      <div class="table-wrap"><table><thead><tr><th>Issue #</th><th>Equipment</th><th>User</th><th>Qty issued</th><th>Returned on</th></tr></thead><tbody id="damagedRows"><tr><td colspan="5">Loading…</td></tr></tbody></table></div>
+      <p id="message" class="message"></p>
+    </section>
+  </main>
+  <footer>Lab Equipment Management · Lab Equipment Management System</footer>
+<script>
+function render(rowsId, list, keys, cols, emptyText, badgeKey) {
+  const rows = document.getElementById(rowsId); rows.innerHTML = "";
+  if (!list.length) { rows.innerHTML = '<tr><td colspan="' + cols + '">' + emptyText + '</td></tr>'; return; }
+  list.forEach(item => {
+    const tr = document.createElement("tr");
+    keys.forEach(k => {
+      const td = document.createElement("td");
+      if (k === badgeKey) { const b = document.createElement("span"); b.className = "badge " + String(item[k]).toLowerCase(); b.textContent = item[k]; td.appendChild(b); }
+      else td.textContent = item[k] ?? "—";
+      tr.appendChild(td);
+    });
+    rows.appendChild(tr);
+  });
+}
+async function loadReports() {
+  const msg = document.getElementById("message"); msg.textContent = "";
+  try {
+    const [p, d] = await Promise.all([fetch("/reports/problem-equipment"), fetch("/reports/damaged-returns")]);
+    if (!p.ok || !d.ok) throw new Error("Request failed.");
+    render("problemRows", await p.json(), ["equipment_id", "name", "category", "status", "quantity", "available_quantity", "unusable_units"], 7, "Everything is in good shape 🎉", "status");
+    render("damagedRows", await d.json(), ["issue_id", "equipment_name", "user_name", "quantity", "return_date"], 5, "No damaged returns.");
+  } catch (e) { msg.textContent = "Could not load reports. Check that the backend API is running. " + e.message; msg.className = "message error"; }
+}
+loadReports();
+</script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Equipment | Lab Equipment Management</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">🔬 Lab Equipment Management</div>
+    <nav><a href="index.html">Home</a><a class="active" href="list.html">All Equipment</a><a href="listOne.html">Search</a><a href="insert.html">Add Equipment</a><a href="update.html">Update</a><a href="delete.html">Delete</a><a href="users.html">Users</a><a href="request.html">Request</a><a href="issues.html">Issue / Return</a><a href="reports.html">Reports</a></nav>
+  </header>
+  <main class="page">
+    <div class="page-heading"><span class="eyebrow">LAB INVENTORY</span><h1>All equipment</h1><p>View the equipment currently stored in the lab database.</p></div>
+    <section class="panel">
+      <div class="toolbar"><h2>Equipment inventory</h2><button class="btn primary" onclick="loadEquipment()">↻ Refresh list</button></div>
+      <div class="table-wrap"><table><thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Total</th><th>Available</th><th>Status</th></tr></thead><tbody id="rows"><tr><td colspan="6">Loading equipment…</td></tr></tbody></table></div>
+      <p id="message" class="message"></p>
+    </section>
+  </main>
+  <footer>Lab Equipment Management · Lab Equipment Management System</footer>
+<script>
+async function loadEquipment() {
+  const rows = document.getElementById("rows"), msg = document.getElementById("message");
+  rows.innerHTML = '<tr><td colspan="6">Loading equipment…</td></tr>'; msg.textContent = "";
+  try {
+    const response = await fetch("/equipment");
+    if (!response.ok) throw new Error("Request failed: " + response.status);
+    const items = await response.json();
+    rows.innerHTML = "";
+    if (!items.length) { rows.innerHTML = '<tr><td colspan="6">No equipment found. Add your first item.</td></tr>'; return; }
+    items.forEach(e => {
+      const tr = document.createElement("tr");
+      [e.equipment_id, e.name, e.category, e.quantity, e.available_quantity].forEach(v => {
+        const td = document.createElement("td"); td.textContent = v ?? ""; tr.appendChild(td);
+      });
+      const td = document.createElement("td"), b = document.createElement("span");
+      b.className = "badge " + String(e.status).toLowerCase(); b.textContent = e.status;
+      td.appendChild(b); tr.appendChild(td); rows.appendChild(tr);
+    });
+  } catch (e) {
+    rows.innerHTML = '<tr><td colspan="6">Could not load equipment. Check that the backend API is running.</td></tr>';
+    msg.textContent = e.message; msg.className = "message error";
+  }
+}
+loadEquipment();
+</script>
+</body>
+</html>

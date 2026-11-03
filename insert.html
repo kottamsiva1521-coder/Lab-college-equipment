@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Equipment | Lab Equipment Management</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">🔬 Lab Equipment Management</div>
+    <nav><a href="index.html">Home</a><a href="list.html">All Equipment</a><a href="listOne.html">Search</a><a class="active" href="insert.html">Add Equipment</a><a href="update.html">Update</a><a href="delete.html">Delete</a><a href="users.html">Users</a><a href="request.html">Request</a><a href="issues.html">Issue / Return</a><a href="reports.html">Reports</a></nav>
+  </header>
+  <main class="page">
+    <div class="page-heading"><span class="eyebrow">INVENTORY</span><h1>Add equipment</h1><p>Enter the equipment details below to add it to the lab.</p></div>
+    <section class="panel form-panel">
+      <form id="equipmentForm">
+        <div class="form-grid">
+          <label>Equipment ID<input type="number" id="equipment_id" min="1" placeholder="e.g. 101" required></label>
+          <label>Name<input type="text" id="name" placeholder="Enter equipment name" required></label>
+          <label>Category<select id="category" required><option value="">Choose a category</option><option>Electronics</option><option>Chemistry</option><option>Physics</option><option>Biology</option><option>Computer</option><option>Mechanical</option><option>Other</option></select></label>
+          <label>Status<select id="status" required><option>Available</option><option>Unavailable</option><option>Damaged</option></select></label>
+          <label>Total quantity<input type="number" id="quantity" min="0" step="1" placeholder="e.g. 10" required></label>
+          <label>Available quantity<input type="number" id="available_quantity" min="0" step="1" placeholder="e.g. 10" required></label>
+        </div>
+        <div class="form-actions"><button class="btn primary" type="submit">Save Equipment</button><button class="btn secondary" type="reset">Clear Form</button><a class="btn text-btn" href="index.html">Cancel</a></div>
+        <p id="message" class="message" role="status"></p>
+      </form>
+    </section>
+    <p class="hint">This form sends data to <code>/equipment</code>. Make sure your backend API is running.</p>
+  </main>
+  <footer>Lab Equipment Management · Lab Equipment Management System</footer>
+<script>const eq = () => ({
+  equipment_id: Number(document.getElementById("equipment_id").value),
+  name: document.getElementById("name").value.trim(),
+  category: document.getElementById("category").value,
+  quantity: Number(document.getElementById("quantity").value),
+  available_quantity: Number(document.getElementById("available_quantity").value),
+  status: document.getElementById("status").value
+});
+document.getElementById("equipmentForm").addEventListener("submit", async function (event) {
+  event.preventDefault();
+  const message = document.getElementById("message");
+  try {
+    const response = await fetch("/equipment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(eq()) });
+    const text = await response.text();
+    if (!response.ok) throw new Error(text || "Could not save equipment.");
+    message.textContent = text || "Equipment saved successfully."; message.className = "message success"; this.reset();
+  } catch (error) {
+    message.textContent = error.message; message.className = "message error";
+  }
+});
+</script>
+</body>
+</html>

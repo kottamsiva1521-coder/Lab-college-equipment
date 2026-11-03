@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Users | Lab Equipment Management</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">🔬 Lab Equipment Management</div>
+    <nav><a href="index.html">Home</a><a href="list.html">All Equipment</a><a href="listOne.html">Search</a><a href="insert.html">Add Equipment</a><a href="update.html">Update</a><a href="delete.html">Delete</a><a class="active" href="users.html">Users</a><a href="request.html">Request</a><a href="issues.html">Issue / Return</a><a href="reports.html">Reports</a></nav>
+  </header>
+  <main class="page">
+    <div class="page-heading"><span class="eyebrow">PEOPLE</span><h1>Users</h1><p>Add students, faculty and administrators who can request or manage equipment.</p></div>
+    <section class="panel form-panel">
+      <form id="userForm">
+        <div class="form-grid">
+          <label>Name<input type="text" id="name" placeholder="Full name" required></label>
+          <label>Email<input type="email" id="email" placeholder="name@college.edu" required></label>
+          <label>Password<input type="password" id="password" minlength="6" placeholder="At least 6 characters" required></label>
+          <label>Role<select id="role"><option value="student">Student</option><option value="faculty">Faculty</option><option value="admin">Admin</option></select></label>
+        </div>
+        <div class="form-actions"><button class="btn primary" type="submit">Add User</button><button class="btn secondary" type="reset">Clear Form</button></div>
+        <p id="message" class="message" role="status"></p>
+      </form>
+    </section>
+    <section class="panel section-gap">
+      <div class="toolbar"><h2>All users</h2><button class="btn primary" onclick="loadUsers()">↻ Refresh list</button></div>
+      <div class="table-wrap"><table><thead><tr><th>User ID</th><th>Name</th><th>Email</th><th>Role</th></tr></thead><tbody id="rows"><tr><td colspan="4">Loading users…</td></tr></tbody></table></div>
+    </section>
+  </main>
+  <footer>Lab Equipment Management · Lab Equipment Management System</footer>
+<script>
+async function loadUsers() {
+  const rows = document.getElementById("rows");
+  try {
+    const r = await fetch("/users");
+    if (!r.ok) throw new Error("Request failed: " + r.status);
+    const users = await r.json(); rows.innerHTML = "";
+    if (!users.length) { rows.innerHTML = '<tr><td colspan="4">No users yet.</td></tr>'; return; }
+    users.forEach(u => {
+      const tr = document.createElement("tr");
+      [u.user_id, u.name, u.email, u.role].forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+      rows.appendChild(tr);
+    });
+  } catch (e) { rows.innerHTML = '<tr><td colspan="4">Could not load users. Check that the backend API is running.</td></tr>'; }
+}
+document.getElementById("userForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  const message = document.getElementById("message");
+  const user = { name: document.getElementById("name").value.trim(), email: document.getElementById("email").value.trim(),
+                 password: document.getElementById("password").value, role: document.getElementById("role").value };
+  try {
+    const r = await fetch("/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(user) });
+    const t = await r.text();
+    if (!r.ok) throw new Error(t || "Could not add user.");
+    message.textContent = t; message.className = "message success"; this.reset(); loadUsers();
+  } catch (err) { message.textContent = err.message; message.className = "message error"; }
+});
+loadUsers();
+</script>
+</body>
+</html>

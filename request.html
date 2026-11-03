@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Request Equipment | Lab Equipment Management</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">🔬 Lab Equipment Management</div>
+    <nav><a href="index.html">Home</a><a href="list.html">All Equipment</a><a href="listOne.html">Search</a><a href="insert.html">Add Equipment</a><a href="update.html">Update</a><a href="delete.html">Delete</a><a href="users.html">Users</a><a class="active" href="request.html">Request</a><a href="issues.html">Issue / Return</a><a href="reports.html">Reports</a></nav>
+  </header>
+  <main class="page">
+    <div class="page-heading"><span class="eyebrow">BORROW</span><h1>Request equipment</h1><p>Students and faculty can request lab equipment. An administrator approves the request on the Issue / Return page.</p></div>
+    <section class="panel form-panel">
+      <form id="requestForm">
+        <div class="form-grid">
+          <label>Equipment<select id="equipment_id" required><option value="">Loading…</option></select></label>
+          <label>Requested by<select id="user_id" required><option value="">Loading…</option></select></label>
+          <label>Quantity<input type="number" id="quantity" min="1" step="1" value="1" required></label>
+        </div>
+        <div class="form-actions"><button class="btn primary" type="submit">Submit Request</button><a class="btn text-btn" href="issues.html">View requests</a></div>
+        <p id="message" class="message" role="status"></p>
+      </form>
+    </section>
+  </main>
+  <footer>Lab Equipment Management · Lab Equipment Management System</footer>
+<script>
+function fill(selectId, items, label) {
+  const sel = document.getElementById(selectId);
+  sel.innerHTML = '<option value="">Choose…</option>';
+  items.forEach(i => { const o = document.createElement("option"); o.value = i.value; o.textContent = i.text; sel.appendChild(o); });
+}
+async function loadOptions() {
+  const message = document.getElementById("message");
+  try {
+    const [eq, us] = await Promise.all([fetch("/equipment").then(r => r.json()), fetch("/users").then(r => r.json())]);
+    fill("equipment_id", eq.filter(e => e.status === "Available" && e.available_quantity > 0)
+      .map(e => ({ value: e.equipment_id, text: e.name + " (" + e.available_quantity + " available)" })));
+    fill("user_id", us.map(u => ({ value: u.user_id, text: u.name + " (" + u.role + ")" })));
+  } catch (e) { message.textContent = "Could not load equipment/users. Check that the backend is running."; message.className = "message error"; }
+}
+document.getElementById("requestForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  const message = document.getElementById("message");
+  const body = { equipment_id: Number(document.getElementById("equipment_id").value), user_id: Number(document.getElementById("user_id").value),
+                 quantity: Number(document.getElementById("quantity").value) };
+  try {
+    const r = await fetch("/issues", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const t = await r.text();
+    if (!r.ok) throw new Error(t || "Could not submit request.");
+    message.textContent = t; message.className = "message success"; this.reset(); document.getElementById("quantity").value = 1; loadOptions();
+  } catch (err) { message.textContent = err.message; message.className = "message error"; }
+});
+loadOptions();
+</script>
+</body>
+</html>
